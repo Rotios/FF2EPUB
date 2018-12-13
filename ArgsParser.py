@@ -63,3 +63,5 @@ if __name__ == '__main__':
     print('using title', args.title)
 
     ConvertTextToEPub().convert_text_to_epub(args.destination, sources,story_info)
+
+"python ArgsParser.py epub.epub --ff_net_id 11759933"

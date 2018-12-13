@@ -156,7 +156,3 @@ class Scraper(object):
 
                 info['author_info'] = {'name':author_name, 'id':author_id}
                 break
-
-"""
-
-"""

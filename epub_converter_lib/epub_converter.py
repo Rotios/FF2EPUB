@@ -87,6 +87,3 @@ class ConvertTextToEPub:
             ">", "&gt;").replace(
             "<", "&lt;").replace(
             r"\_", "&#95;")
-
-
-"python ArgsParser.py epub.epub --ff_net_id 11759933"
