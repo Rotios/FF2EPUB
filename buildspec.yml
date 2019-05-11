@@ -8,6 +8,6 @@ phases:
 artifacts:
   type: zip
   files:
-    - *.py
+    - ./*.py
     - epub_converter_lib/*
     - lib/**/*
