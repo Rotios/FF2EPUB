@@ -2,12 +2,10 @@ version: 0.1
 phases:
   build:
     commands:
-      - pip install -r requirements-lambda.txt -t lib
+      - pip install -r requirements-lambda.txt -t .
 
   
 artifacts:
   type: zip
   files:
-    - ./*.py
-    - epub_converter_lib/*
-    - lib/**/*
+    - ./**/*

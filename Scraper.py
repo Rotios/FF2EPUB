@@ -159,4 +159,3 @@ class Scraper(object):
             print(author_id, author_name, author_info)
 
             info['author_info'] = {'name':author_name, 'id':author_id}
-Scraper("https://www.fanfiction.net/s/13256350/1/Harry-Potter-and-the-Scrambled-Sorting").scrape()
