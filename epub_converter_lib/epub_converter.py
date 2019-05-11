@@ -6,7 +6,6 @@ import re
 from shutil import copyfile
 from jinja2 import Environment, PackageLoader
 from docutils.core import publish_string, publish_doctree
-import psutil
 
 
 class ConvertTextToEPub:
@@ -45,10 +44,6 @@ class ConvertTextToEPub:
                 
                 text = template.render(content)
                 
-                print(temp_dir)
-                process = psutil.Process(os.getpid())
-                print(process.memory_info())  # in bytes 
-                
                 path_to_temp_content = os.path.join(temp_dir, 'content', source['fileName'])
                 with codecs.open(path_to_temp_content, 'w+', 'utf-8') as f:
                     f.write(text)
@@ -62,9 +57,6 @@ class ConvertTextToEPub:
             self.zip_content(env, temp_dir, story_info, zip_file, '00_toc.ncx')
             self.zip_content(env, temp_dir, story_info, zip_file, '00_stylesheet.css')
 
-            print(temp_dir)
-            process = psutil.Process(os.getpid())
-            print(process.memory_info())  # in bytes 
         finally:
             if zip_file:
                 zip_file.close()

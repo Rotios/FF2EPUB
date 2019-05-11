@@ -2,10 +2,10 @@ import time
 import os
 from datetime import datetime
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
+from requests_html import HTMLSession
+
+FANFICTION_STORY_BASE_URL = 'https://www.fanfiction.net/s/'
+FANFICTION_BASE_URL = 'https://www.fanfiction.net'
 
 class Scraper(object):
 
@@ -15,7 +15,7 @@ class Scraper(object):
         self.get_first_chapter()
 
     def get_first_chapter(self):
-        if self.url.startswith('https://www.fanfiction.net/s/'):
+        if self.url.startswith(FANFICTION_STORY_BASE_URL):
             chap_pos = self.url.find('.net/s/') + len('.net/s/') + 1
             chap_end = self.url.find('/', chap_pos)
 
@@ -30,16 +30,13 @@ class Scraper(object):
         """
         pwd = os.getcwd()
 
-        # Tell ChromeDriver to be headless, so it doesn't open up a browser.
-        options = webdriver.ChromeOptions()
-        options.add_argument('headless')
-        options.add_argument('log-level=3')
-
-        browser = webdriver.Chrome(chrome_options=options)
+        session = HTMLSession()
 
         print('getting first chapter in story from url: ', self.url)
-        browser.get(self.url)
-        info = self.get_story_info(browser)
+
+        request = session.get(self.url)
+        info = self.get_story_info(request)
+
         title = info['title'] if self.title is None else self.title
 
         if not os.path.exists(os.path.join(pwd,title)):
@@ -48,41 +45,44 @@ class Scraper(object):
         if not os.path.exists(os.path.join(pwd,title, 'chapters')):
             os.mkdir(os.path.join(pwd, title, 'chapters'))
 
-
-        done = False
-        with open(os.path.join(pwd,title,'full_story.html'), 'w+', encoding='utf-8') as file:
+        with open(os.path.join(pwd, title,'full_story.html'), 'w+', encoding='utf-8') as file:
             i = 1
-            self.write_story_to_file(pwd, title, i, browser, file)
-            done = self.go_to_next_page_if_exists(browser, i)
+            self.write_story_to_file(pwd, title, i, request, file)
+            request = self.go_to_next_page_if_exists(session, request, i)
             
-            while not done:    
+            while request:    
                 i+=1
 
                 print("[%s] Got next page in story. Chapter number is %i" % (
                         datetime.now().strftime("%Y-%m-%d %H:%M:%S"), i))
 
-                self.write_story_to_file(pwd, title, i, browser, file)
+                self.write_story_to_file(pwd, title, i, request, file)
 
-                done = self.go_to_next_page_if_exists(browser, i)
+                request = self.go_to_next_page_if_exists(session, request, i)
 
         return os.path.join(pwd, title), i, info
 
-    def go_to_next_page_if_exists(self, browser, i):
+    def go_to_next_page_if_exists(self, session, request, i):
         try:
-            element = browser.find_element_by_xpath('//button[text()="Next >"]')
+            next = [b for b in request.html.find('button') if 'Next' in b.text]
 
-            print('Going to next chapter at location ' + element.get_attribute('onClick'))
+            if len(next) > 0:
+                next = next[0].attrs['onclick']
+                if 'self.location=\'' in next:
+                    next = next[len('self.location=\''):-1]
+                
+                print('Going to next chapter at location ' + next)
+                
+                return session.get(FANFICTION_BASE_URL + next)
 
-            element.click()
-            return False
         except Exception:
             print(("[%s] Done finding all pages! Found %d Chapters!" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), i)))
             
-        return True
+        return None
 
-    def write_story_to_file(self, pwd, title, i, browser, full_story_file):
+    def write_story_to_file(self, pwd, title, i, request, full_story_file):
         with open(os.path.join(pwd, title, 'chapters', 'chapter_' + str(i)) + '.html', 'w', encoding='utf-8') as file:
-            element = self.get_story_text_browser_element(browser)                
+            element = self.get_story_text_browser_element(request)                
 
             print("[%s] Results loaded." % (
                 datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
@@ -92,24 +92,25 @@ class Scraper(object):
         full_story_file.write("\n" + element + "\n")
         
 
-    def get_story_text_browser_element(self, browser):
+    def get_story_text_browser_element(self, request):
         element = None
         while not element:
             try:
-                element = browser.find_element_by_id('storytext')
+                element = request.html.find('#storytextp')[0]
             except Exception as e:
                 print('Refreshing page and retrying due to error {}.'.format(str(e)))
-                browser.refresh()
-        return element.get_attribute('innerHTML')
+                raise e
+        return element.html
 
-    def get_story_info(self, element):
+    def get_story_info(self, request):
         try:
-            element = element.find_element_by_id('profile_top')
-
-            info = {}
+            element = request.html.find('#profile_top')[0]
 
             print("Getting story title")
-            name = element.find_element_by_tag_name('b')
+
+            info = {}
+            sel = 'b.xcontrast_txt'
+            name = element.find(sel)[0]
             info['title'] = name.text
 
             print('Getting Author Information')
@@ -119,11 +120,11 @@ class Scraper(object):
             self.get_story_description(element, info)
             
             print('Getting story metadata')
-            span_elems = element.find_elements_by_tag_name('span')
-            metadata = span_elems[3].text
+            span_elems = element.find('span')
+            metadata = span_elems[2].text
 
             print('Getting last story update date')
-            date_updated = span_elems[5].text
+            date_updated = span_elems[3].text
 
             info['date'] = date_updated
 
@@ -136,23 +137,26 @@ class Scraper(object):
             raise e
 
     def get_story_description(self, element, info):
-        div_elems = element.find_elements_by_tag_name('div')
-        info['description'] = div_elems[1].text
+        div_elems = element.find('div.xcontrast_txt')
+        info['description'] = div_elems[0].text
 
     def get_author_info(self, element, info):
-        a_elems = element.find_elements_by_tag_name('a')
+        a_elems = element.absolute_links
         user_link = 'https://www.fanfiction.net/u/'
 
-        for elem in a_elems:
-            href = elem.get_attribute('href')
-            if href.startswith(user_link):
-                print(href)
+        link = [a for a in a_elems if user_link in a]
 
-                author_info = href[len(user_link):].split('/')
+        if len(link) > 0:
 
-                author_name = author_info[1]
-                author_id = author_info[0]
-                print(author_id, author_name, author_info)
+            href = link[0]
+            
+            print(href)
 
-                info['author_info'] = {'name':author_name, 'id':author_id}
-                break
+            author_info = href[len(user_link):].split('/')
+
+            author_name = author_info[1]
+            author_id = author_info[0]
+            print(author_id, author_name, author_info)
+
+            info['author_info'] = {'name':author_name, 'id':author_id}
+Scraper("https://www.fanfiction.net/s/13256350/1/Harry-Potter-and-the-Scrambled-Sorting").scrape()
