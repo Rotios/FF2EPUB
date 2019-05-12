@@ -28,7 +28,7 @@ class Scraper(object):
         Run scraper on FF Website.
 
         """
-        pwd = os.getcwd()
+        pwd = "/tmp/"
 
         session = HTMLSession()
 

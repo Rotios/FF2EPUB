@@ -7,7 +7,6 @@ from shutil import copyfile
 from jinja2 import Environment, PackageLoader
 from docutils.core import publish_string, publish_doctree
 
-
 class ConvertTextToEPub:
 
     def convert_text_to_epub(self, destination, sources, story_info):
