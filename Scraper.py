@@ -9,10 +9,11 @@ FANFICTION_BASE_URL = 'https://www.fanfiction.net'
 
 class Scraper(object):
 
-    def __init__(self, url, title = None):
+    def __init__(self, url, dest_dir, title = None):
         self.url = url
         self.title = title
         self.get_first_chapter()
+        self.dest_dir = dest_dir
 
     def get_first_chapter(self):
         if self.url.startswith(FANFICTION_STORY_BASE_URL):
@@ -28,8 +29,7 @@ class Scraper(object):
         Run scraper on FF Website.
 
         """
-        pwd = "/tmp/"
-
+        pwd = self.dest_dir
         session = HTMLSession()
 
         print('getting first chapter in story from url: ', self.url)

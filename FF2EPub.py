@@ -23,8 +23,8 @@ def lambda_handler(event, context):
 
     if 'title' in event:
         title = event['title']
-    
-    scraper = Scraper(url, title)
+    dest_dir = "/tmp/" + str(context.aws_request_id) + "/"
+    scraper = Scraper(url, dest_dir, title)
     loc, num_chapters, story_info = scraper.scrape()
     chapter_loc = os.path.join(loc, 'chapters')
 
@@ -38,10 +38,11 @@ def lambda_handler(event, context):
     ]
     
     print('using title', story_info['title'])
-    file_loc = "/tmp/" + str(context.aws_request_id) + "/" + story_info['title'] + '.epub'
+    title_key = story_info['title'].replace(" ", "-")
+    file_loc =os.path.join(dest_dir, title_key + '.epub')
     
     ConvertTextToEPub().convert_text_to_epub(file_loc, sources, story_info)
 
     story_id = url.split("/s/")[1].split('/')[0]
 
-    s3.upload_file(file_loc, os.environ['S3_UPLOAD_BUCKET'], story_id + "/" + story_info['title'] + ".epub")
+    s3.upload_file(file_loc, os.environ['S3_UPLOAD_BUCKET'], story_id + "/" + title_key + ".epub")
