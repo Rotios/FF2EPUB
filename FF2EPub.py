@@ -24,6 +24,9 @@ def lambda_handler(event, context):
     if 'title' in event:
         title = event['title']
     dest_dir = "/tmp/" + str(context.aws_request_id) + "/"
+    if not os.path.exists(dest_dir):
+        os.mkdir(dest_dir)
+        
     scraper = Scraper(url, dest_dir, title)
     loc, num_chapters, story_info = scraper.scrape()
     chapter_loc = os.path.join(loc, 'chapters')

@@ -38,6 +38,7 @@ class Scraper(object):
         info = self.get_story_info(request)
 
         title = info['title'] if self.title is None else self.title
+        title = title.replace(" ", "-")
 
         if not os.path.exists(os.path.join(pwd,title)):
             os.mkdir(os.path.join(pwd, title))
