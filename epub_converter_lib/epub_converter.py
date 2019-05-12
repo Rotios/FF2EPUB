@@ -10,9 +10,12 @@ from docutils.core import publish_string, publish_doctree
 class ConvertTextToEPub:
 
     def convert_text_to_epub(self, destination, sources, story_info):
+        zip_file = None
         try:
-            zip_file = zipfile.ZipFile(destination, "w", zipfile.ZIP_DEFLATED)        
+            print("Creating zip file at destination " + destination)
 
+            zip_file = zipfile.ZipFile(destination, "w", zipfile.ZIP_DEFLATED)        
+            print("Writing zip file at destination " + destination)
             story_info.update({
                 'files': sources,
                 'chapters': [],
@@ -55,7 +58,8 @@ class ConvertTextToEPub:
             self.zip_content(env, temp_dir, story_info, zip_file, '00_content.opf')
             self.zip_content(env, temp_dir, story_info, zip_file, '00_toc.ncx')
             self.zip_content(env, temp_dir, story_info, zip_file, '00_stylesheet.css')
-
+        except Exception as e:
+            print(e)
         finally:
             if zip_file:
                 zip_file.close()
