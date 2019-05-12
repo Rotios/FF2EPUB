@@ -42,6 +42,6 @@ def lambda_handler(event, context):
     
     ConvertTextToEPub().convert_text_to_epub(file_loc, sources, story_info)
 
-    story_id = url.split("/s/")[2].split('/')[0]
+    story_id = url.split("/s/")[1].split('/')[0]
 
     s3.upload_file(file_loc, os.environ['S3_UPLOAD_BUCKET'], story_id + "/" + story_info['title'] + ".epub")
